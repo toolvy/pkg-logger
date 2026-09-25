@@ -27,13 +27,13 @@ const LEVEL = {
 } as const;
 
 const LABEL = {
-  trace: "TRACE",
-  debug: "DEBUG",
+  trace: "TRCE",
+  debug: "DBUG",
   info: "INFO",
-  notice: "NOTICE",
+  notice: "NOTC",
   warn: "WARN",
-  error: "ERROR",
-  fatal: "FATAL",
+  error: "ERRO",
+  fatal: "FATL",
 } as const;
 
 const COLOR = {
@@ -50,6 +50,21 @@ const RESET = "\x1b[0m";
 const DIM = "\x1b[2m";
 
 type WritableLevel = Exclude<LogLevel, "silent">;
+
+function timestamp(): string {
+  const d = new Date();
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  const hour = String(d.getHours()).padStart(2, "0");
+  const minute = String(d.getMinutes()).padStart(2, "0");
+  const second = String(d.getSeconds()).padStart(2, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+
+  return `${day}/${month}/${year} ${hour}:${minute}:${second}.${ms}`;
+}
 
 function format(value: unknown): string {
   if (typeof value === "string") return value;
@@ -82,18 +97,17 @@ function format(value: unknown): string {
 export class Logger {
   private level: number;
   private readonly name?: string;
-  private readonly timestamp: boolean;
+  private readonly timestampEnabled: boolean;
   private readonly colors: boolean;
 
   constructor(options: LoggerOptions = {}) {
     this.level = LEVEL[options.level ?? "info"];
     this.name = options.name;
-    this.timestamp = options.timestamp ?? true;
+    this.timestampEnabled = options.timestamp ?? true;
 
     this.colors =
       options.colors ??
-      (process.stdout.isTTY &&
-        process.env.NO_COLOR === undefined);
+      (process.stdout.isTTY && process.env.NO_COLOR === undefined);
   }
 
   setLevel(level: LogLevel): this {
@@ -109,7 +123,7 @@ export class Logger {
     return new Logger({
       level: this.levelName(),
       name: this.name ? `${this.name}:${name}` : name,
-      timestamp: this.timestamp,
+      timestamp: this.timestampEnabled,
       colors: this.colors,
     });
   }
@@ -156,19 +170,17 @@ export class Logger {
   ): void {
     let line = "";
 
-    if (this.timestamp) {
-      const time = new Date().toISOString().slice(11, 23);
+    if (this.timestampEnabled) {
+      const time = timestamp();
 
       line += this.colors
-        ? `${DIM}${time}${RESET} `
-        : `${time} `;
+        ? `${DIM}[${time}]${RESET} `
+        : `[${time}] `;
     }
 
-    if (this.colors) {
-      line += `${COLOR[level]}[${LABEL[level]}]${RESET}`;
-    } else {
-      line += `[${LABEL[level]}]`;
-    }
+    line += this.colors
+      ? `${COLOR[level]}[${LABEL[level]}]${RESET}`
+      : `[${LABEL[level]}]`;
 
     if (this.name) {
       line += this.colors
