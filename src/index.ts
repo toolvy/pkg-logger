@@ -2,6 +2,7 @@ export type LogLevel =
   | "trace"
   | "debug"
   | "info"
+  | "notice"
   | "warn"
   | "error"
   | "fatal"
@@ -18,6 +19,7 @@ const LEVEL = {
   trace: 10,
   debug: 20,
   info: 30,
+  notice: 35,
   warn: 40,
   error: 50,
   fatal: 60,
@@ -25,18 +27,20 @@ const LEVEL = {
 } as const;
 
 const LABEL = {
-  trace: "TRC",
-  debug: "DBG",
-  info: "INF",
-  warn: "WRN",
-  error: "ERR",
-  fatal: "FTL",
+  trace: "TRACE",
+  debug: "DEBUG",
+  info: "INFO",
+  notice: "NOTICE",
+  warn: "WARN",
+  error: "ERROR",
+  fatal: "FATAL",
 } as const;
 
 const COLOR = {
   trace: "\x1b[90m",
   debug: "\x1b[36m",
   info: "\x1b[32m",
+  notice: "\x1b[34m",
   warn: "\x1b[33m",
   error: "\x1b[31m",
   fatal: "\x1b[91m",
@@ -125,6 +129,11 @@ export class Logger {
     this.write("info", message, args);
   }
 
+  notice(message?: unknown, ...args: unknown[]): void {
+    if (LEVEL.notice < this.level) return;
+    this.write("notice", message, args);
+  }
+
   warn(message?: unknown, ...args: unknown[]): void {
     if (LEVEL.warn < this.level) return;
     this.write("warn", message, args);
@@ -156,9 +165,9 @@ export class Logger {
     }
 
     if (this.colors) {
-      line += `${COLOR[level]}${LABEL[level]}${RESET}`;
+      line += `${COLOR[level]}[${LABEL[level]}]${RESET}`;
     } else {
-      line += LABEL[level];
+      line += `[${LABEL[level]}]`;
     }
 
     if (this.name) {
@@ -192,6 +201,7 @@ export class Logger {
     if (this.level <= LEVEL.trace) return "trace";
     if (this.level <= LEVEL.debug) return "debug";
     if (this.level <= LEVEL.info) return "info";
+    if (this.level <= LEVEL.notice) return "notice";
     if (this.level <= LEVEL.warn) return "warn";
     if (this.level <= LEVEL.error) return "error";
     if (this.level <= LEVEL.fatal) return "fatal";
